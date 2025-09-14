@@ -1,0 +1,53 @@
+## 4) iris데이터를 train 데이터와 test데이터로 (1) 6:4로 분할 한 후 (2)의사결정 나무 모델을 만들고 (3)시각화를 수행하고 (4)정분류율을 계산하고 (5)cp값을 구하여라.
+
+# 필요한 패키지 로드
+library(rpart)
+library(rpart.plot)   # 시각화
+library(caret)        # confusionMatrix
+set.seed(123)
+
+# 1. 데이터 분할 (6:4)
+idx <- sample(1:nrow(iris), size = 0.6 * nrow(iris))
+train <- iris[idx, ]
+test <- iris[-idx, ]
+
+# 2. 의사결정나무 모델 생성
+model <- rpart(Species ~ ., data = train, method = "class")
+
+# 3. 시각화
+rpart.plot(model, type = 3, extra = 101, fallen.leaves = TRUE)
+
+# 4. 정분류율 계산
+pred <- predict(model, test, type = "class")
+cm <- confusionMatrix(pred, test$Species)
+cm$overall['Accuracy']   # 정분류율
+
+# 5. cp 값 확인
+printcp(model)
+
+## 5) airquality 데이터 전처리 (NA 제거 필요)
+data("airquality")
+air <- na.omit(airquality)
+
+set.seed(123)
+
+# 1. 데이터 분할 (6:4)
+idx <- sample(1:nrow(air), size = 0.6 * nrow(air))
+train <- air[idx, ]
+test <- air[-idx, ]
+
+# 2. 의사결정나무 모델 생성
+# 예: Ozone 예측 (연속형 -> method="anova")
+model_air <- rpart(Ozone ~ ., data = train, method = "anova")
+
+# 3. 시각화
+rpart.plot(model_air, type = 3, fallen.leaves = TRUE)
+
+# 4. 정분류율 대신 회귀모델 → 예측 정확도 (RMSE 계산)
+pred_air <- predict(model_air, test)
+rmse <- sqrt(mean((pred_air - test$Ozone)^2))
+rmse
+
+# 5. cp 값 확인
+printcp(model_air)
+
