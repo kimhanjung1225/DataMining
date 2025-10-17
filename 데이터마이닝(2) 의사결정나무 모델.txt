@@ -1,0 +1,94 @@
+#4. iris데이터를 train 데이터와 test 데이터로 (1) 6:4로 분할 한 후 (2)의사결정 나무 모델을 만들고 (3)시각화를 수행하고 (4) 정분류율을 계산하고 (5) cp값을 구하여라
+
+library(rpart)
+data("iris")
+summary(iris)
+
+sum(!complete.cases(iris)) ## 결측치 있는지 확인하는 코드
+str(iris) #Species는 Factor로 범주형
+iris_0<-na.omit(iris) ## 결측치를 제거하여 iris_0이라는 새로운 변수 생성  
+
+#1) train, test 데이터 6:4로 분할
+set.seed(1234)
+ind<-sample(2,nrow(iris_0), replace=TRUE, prob=c(0.6,0.4))
+train<-iris_0[ind==1,]
+test<-iris_0[ind==2,]
+
+#2)의사결정 나무 모델을 만들기
+tree<-rpart(Species~., data = train)
+tree
+summary(tree)
+
+#3)시각화 수행
+plot(tree, compress = T, margin = 0.3)
+text(tree, cex=1.5)
+
+#4)예측수행 및 정분류율 계산
+pred<- predict(tree, newdata = test, type = "class") # 예측 수행
+summary(pred)  
+table(pred, test$Species, dnn=c("Actual", "Predicted")) # 혼동행렬 생성
+mean(pred == test$Species) # 정분류율 계산
+
+#5)cp값 구하기
+round(tree$cptable,3)  #xerror가 가장 낮은 값이 좋음
+printcp(tree)
+plotcp(tree)
+
+#6)cp값 결정 후 의사나무모형 분석 재실시
+tree_0<-rpart(Species~., data = train, cp=0.010)
+ptree_0<-predict(tree_0, newdata = test, type = "class")
+
+round(tree_0$cptable,3)
+table(ptree_0, test$Species, dnn=c("Actual", "Predicted"))
+mean(ptree_0 == test$Species)
+
+
+#5. airquality데이터셋에 대해 의사결정나무모델을 만들고 4.(1)~(5)값을 구하여라.
+
+library(rpart)
+data("airquality")
+summary(airquality)
+
+sum(!complete.cases(airquality)) ## 결측치 있는지 확인하는 코드
+str(airquality)  
+airquality_0<-na.omit(airquality) ## 결측치를 제거하여 iris_0이라는 새로운 변수 생성  
+
+#1) train, test 데이터 6:4로 분할
+set.seed(1234)
+ind<-sample(2,nrow(airquality_0), replace=TRUE, prob=c(0.6,0.4))
+train<-airquality_0[ind==1,]
+test<-airquality_0[ind==2,]
+
+#2)의사결정 나무 모델을 만들기
+air_tree<-rpart(Ozone~., data = train, method = "anova")
+air_tree
+summary(air_tree)
+
+#3)시각화 수행
+plot(air_tree, compress = T, margin = 0.3)
+text(air_tree, cex=1.5)
+  
+#4)예측수행 및 정분류율 계산
+air_pred<- predict(air_tree, newdata = test) # 예측 수행
+summary(air_pred)  
+
+#회귀트리는 정분류율 확률이 0, 예측 오차로 평가
+rmse <- sqrt(mean((air_pred - test$Ozone)^2)) # 평균제곱근오차
+mae  <- mean(abs(air_pred - test$Ozone)) #평균절대오차
+
+cat("RMSE:", rmse, "\nMAE:", mae)
+
+#5)cp값 구하기
+round(air_tree$cptable,3)  #xerror가 가장 낮은 값이 좋음
+printcp(air_tree)
+plotcp(air_tree)
+
+#6) cp값 결정 후 의사나무모형 분석 재실시
+air_tree_0<-rpart(Ozone~., data = train, method = "anova",cp=0.010)
+pair_tree<-predict(air_tree_0, newdata = test)
+
+round(air_tree_0$cptable,3)
+rmse <- sqrt(mean((pair_tree - test$Ozone)^2)) # 평균제곱근오차
+mae  <- mean(abs(pair_tree - test$Ozone))
+
+cat("RMSE:", rmse, "\nMAE:", mae)

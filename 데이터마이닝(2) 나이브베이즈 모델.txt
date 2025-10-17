@@ -1,0 +1,129 @@
+##1. iris데이터셋을 나이브 베이즈 분류를 실시하라.
+
+library(e1071)
+library(caret)
+library(pROC)
+data("iris")
+summary(iris)
+
+#1)데이터 셋을 7:3으로 나누어 훈련데이터와 테스트데이터로 분류하라.
+
+set.seed(1234)
+ind<-sample(2,nrow(iris), replace = TRUE, prob=c(0.7,0.3))
+train<-iris[ind==1,]
+test<-iris[ind==2,]
+
+#나이브 베이즈 모델 학습
+b<-naiveBayes(Species~., data = train) 
+b
+
+#예측 및 혼동행렬
+pb<-predict(b, newdata=test)
+pb
+
+#2)정오분류표를 만들고 정밀도값을 구하여라.
+
+#정분류율 계산하기
+t<-table(pb, test$Species)
+t
+
+#정확도
+sum(diag(t))/sum(t)  
+
+#오분류율
+1-sum(diag(t))/sum(t)
+
+#caret 정밀도
+confusionMatrix(factor(pb, levels = levels(test$Species)), test$Species)$byClass[, "Precision"]
+
+#3)영향을 미치는 순서대로 변수명을 나열하라.
+aggregate(. ~ Species, data = train, FUN = mean)    # 클래스별 평균
+aggregate(. ~ Species, data = train, FUN = sd)      # 클래스별 표준편차
+
+#4)AUC값을 구하라.
+pp <- predict(b, newdata = test, type = "raw")
+multi_auc <- multiclass.roc(test$Species, pp)
+cat("AUC:", round(multi_auc$auc, 3), "\n")
+
+
+##2. spam자료에 대해 나이브 베이즈 분류를 실시하라.
+
+# 1) CRAN 아카이브에서 직접 설치 (tar.gz 주소를 따옴표로 감싸야 함)
+url <- "https://cran.r-project.org/src/contrib/Archive/ElemStatLearn/ElemStatLearn_2015.6.26.2.tar.gz"
+install.packages(url, repos = NULL, type = "source")
+
+# 2) 또는 일반적으로 CRAN에서 설치 (권장)
+install.packages("ElemStatLearn")
+
+
+# 3) 패키지 로드
+library(ElemStatLearn)
+library(e1071)
+# 4) spam 데이터 불러오기
+
+data(spam)
+str(spam)
+
+summary(spam)
+sum(is.na(spam))
+
+#1) 데이터 분할
+set.seed(1234)
+ind<-sample(2,nrow(spam),replace = TRUE, prob=c(0.6,0.4))
+train<-spam[ind==1,]
+test<-spam[ind==2,]
+
+#2)데이터셋에 대한 정보를 요약하고 결측치를 확인하라
+summary(spam)
+sum(!complete.cases(spam))
+str(spam)
+
+summary(train)
+sum(!complete.cases(train))
+summary(test)
+sum(!complete.cases(test))
+
+#3)정분류율을 구하여라.
+b <- naiveBayes(spam ~ ., data = train)   # 필요시 laplace=1
+pred <- predict(b, newdata = test)
+t <- table(Predicted = pred, Actual = test$spam)
+accuracy <- sum(diag(t)) / sum(t)
+accuracy
+
+Error<-1-accuracy
+Error
+
+##3. HouseVote데이터셋에 대해 나이브 베이즈 분류를 실시하라.
+
+library(mlbench)
+library(e1071)
+
+#1) 데이터셋에 대해 정보를 요약하라.
+data("HouseVotes84")
+str(HouseVotes84)
+summary(HouseVotes84)
+
+#2) 결측치를 확인하라.
+sum(is.na(HouseVotes84))
+HouseVotes84_0<-na.omit(HouseVotes84)
+str(HouseVotes84_0)
+
+#3)
+# 데이터 분할 (6:4 비율)
+set.seed(123)
+ind <- sample(2, nrow(HouseVotes84_0), replace = TRUE, prob = c(0.6, 0.4))
+train <- HouseVotes84_0[ind == 1, ]
+test  <- HouseVotes84_0[ind == 2, ]
+
+# 나이브 베이즈 모델 학습
+model <- naiveBayes(Class ~ ., data = train)
+
+# 예측
+pred <- predict(model, test)
+
+# 혼동 행렬 및 정분류율
+table(Predicted = pred, Actual = test$Class)
+
+# 정분류율 계산
+mean(pred == test$Class)
+
