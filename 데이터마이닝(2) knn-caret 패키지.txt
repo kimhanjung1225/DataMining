@@ -1,0 +1,34 @@
+##caret 기반 knn분석
+library(ISLR)
+library(caret)
+library(pROC)
+data(Smarket)
+str(Smarket)
+summary(Smarket)
+sum(is.na(Smarket))
+
+#2) 데이터 분할
+set.seed(100)
+idxTrain <- createDataPartition(y = Smarket$Direction, p = 0.75, list = FALSE)
+train <- Smarket[idxTrain, ]
+test  <- Smarket[-idxTrain, ]
+
+##2) 데이터 전처리
+trainX <- train[, 1:8]
+preproc <- preProcess(trainX, method = c("center", "scale"))
+preproc
+
+##3) knn분류 및 예측, 최적의 k값 찾기
+ctrl <- trainControl(method = "repeatedcv", repeats = 3)
+knnFit <- train(Direction ~ ., data = train,method = "knn",trControl = ctrl,preProcess = c("center", "scale"),tuneLength = 20)
+knnFit
+
+##4) 오분률표 만들기
+pred <- predict(knnFit, newdata = test)
+confusionMatrix(pred, test$Direction)
+
+##5) ROC 그리기
+prob <- predict(knnFit, newdata = test, type = "prob")
+roc_obj <- roc(response = test$Direction, predictor = prob$Up)
+plot(roc_obj, col = "blue", main = "KNN ROC Curve")
+auc(roc_obj)

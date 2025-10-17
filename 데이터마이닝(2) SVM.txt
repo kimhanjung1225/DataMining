@@ -1,0 +1,38 @@
+data(iris)
+##(e1071)의 svm() 수행
+library(e1071)
+f_0.1<-svm(Species~.,data = iris, type = "C-classification", kernel = "radial", cost =10, gamma=0.1)
+summary(f_0.1)
+p_0.1<-predict(f_0.1, iris, decision.values = TRUE)
+summary(p_0.1)
+acc_0.1<-table(p_0.1, iris$Species)
+classAgreement(acc_0.1)
+plot(f_0.1, iris, Petal.Width~Petal.Length, slice = list(Sepal.Width=3, Sepal.Length=4))
+
+##3. data(iris)에 대해 최적의 cost와 gamma값을 찾고 svm 모델을 만들어라. 1) 최적의 파라미터 찾기 2) svm모델 세우기 3) 정분류표를 구하라.
+library(e1071)
+data(iris)
+
+set.seed(100)
+t <- tune.svm(Species ~ ., data = iris,
+              kernel = "radial",
+              gamma = 10^(-3:1),
+              cost = 10^(0:3))
+summary(t)
+t$best.parameters
+best_model <- t$best.model
+
+pred <- predict(best_model, iris)
+cm <- table(Predicted = pred, Actual = iris$Species)
+cm
+sum(diag(cm)) / sum(cm)   # 정확도
+
+
+# 최적 파라미터 모델 평가
+idx <- caret::createDataPartition(iris$Species, p=0.7, list=FALSE)
+train <- iris[idx, ]; test <- iris[-idx, ]
+t <- tune.svm(Species~., data=train, kernel="radial",
+              gamma=10^(-3:1), cost=10^(0:3))
+pred <- predict(t$best.model, test)
+caret::confusionMatrix(pred, test$Species)
+
